@@ -1,12 +1,9 @@
-## Hi there 👋
+<img src="../images//header_980x200.jpg" alt="Snutig Header" />
 
-<!--
+## snutig GmbH
 
-**Here are some ideas to get you started:**
+As an agency for IT and marketing services, we support our clients with individual IT solutions in the areas of back-up strategies, IT security, and development, and offer creative solutions in the fields of brand design, personnel marketing, and web design. With our team of 21 men and women, we are your competent IT and marketing partner, assisting you with all questions related to these topics. Whether it's planning, implementation, or optimization of your campaigns.
 
-🙋‍♀️ A short introduction - what is your organization all about?
-🌈 Contribution guidelines - how can the community get involved?
-👩‍💻 Useful resources - where can the community find your docs? Is there anything else the community should know?
-🍿 Fun facts - what does your team eat for breakfast?
-🧙 Remember, you can do mighty things with the power of [Markdown](https://docs.github.com/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
--->
+Visit [www.snutig.de](https://snutig.de/) to learn more!
+
+----
