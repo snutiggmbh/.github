@@ -7,3 +7,5 @@ As an agency for IT and marketing services, we support our clients with individu
 Visit [www.snutig.de](https://snutig.de/) to learn more!
 
 ---
+
+<img src="https://github.com/snutiggmbh/.github/blob/main/images/snutig_mover.gif" alt="Snutig Mover" width="480" height="270" />
