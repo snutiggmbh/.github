@@ -1,4 +1,4 @@
-<img src="../images//header_980x200.jpg" alt="Snutig Header" />
+<img src="https://github.com/snutiggmbh/.github/blob/main/images/header_980x200.jpg" alt="Snutig Header" />
 
 ## snutig GmbH
 
@@ -6,4 +6,4 @@ As an agency for IT and marketing services, we support our clients with individu
 
 Visit [www.snutig.de](https://snutig.de/) to learn more!
 
-----
+---
