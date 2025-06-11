@@ -2,7 +2,7 @@
 
 ## snutig GmbH
 
-As an agency for IT and marketing services, we support our clients with individual IT solutions in the areas of back-up strategies, IT security, and development, and offer creative solutions in the fields of brand design, personnel marketing, and web design. With our team of 21 men and women, we are your competent IT and marketing partner, assisting you with all questions related to these topics. Whether it's planning, implementation, or optimization of your campaigns.
+As an agency for IT and marketing services, we support our clients with individual IT solutions in the areas of back-up strategies, IT security, and development, and offer creative solutions in the fields of brand design, personnel marketing, and web design. With our experience, we are your competent IT and marketing partner, assisting you with all questions related to these topics. Whether it's planning, implementation, or optimization of your campaigns.
 
 Visit [www.snutig.de](https://snutig.de/) to learn more!
 
