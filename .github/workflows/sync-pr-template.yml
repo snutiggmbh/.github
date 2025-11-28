@@ -96,22 +96,37 @@ jobs:
             # Ensure .github exists
             mkdir -p .github
 
+            # Check if target file exists
+            if [ -f "$TARGET_FILE" ]; then
+              echo "Template already exists in $ORG/$REPO_NAME – checking if it is up to date."
+              # If content is identical to canonical template, skip
+              if cmp -s "../$TEMPLATE_SOURCE" "$TARGET_FILE"; then
+                echo "Template is already up to date in $ORG/$REPO_NAME, skipping."
+                cd ..
+                rm -rf "$REPO_NAME"
+                continue
+              else
+                echo "Template differs from canonical version – updating."
+              fi
+            else
+              echo "Template does not exist in $ORG/$REPO_NAME – creating new one."
+            fi
+
             # Copy canonical template
             cp "../$TEMPLATE_SOURCE" "$TARGET_FILE"
 
-            # Check if there is any actual change
-            if git status --porcelain | grep -q "$TARGET_FILE"; then
-              echo "Template changed in $ORG/$REPO_NAME, committing and pushing to $TARGET_BRANCH ..."
+            # Stage, commit, push (with [skip ci] so no workflows run in that repo)
+            git add "$TARGET_FILE"
+            git commit -m "chore: sync pull request template from org .github repository [skip ci]" || {
+              echo "Nothing to commit in $ORG/$REPO_NAME (unexpected)."
+              cd ..
+              rm -rf "$REPO_NAME"
+              continue
+            }
 
-              # NOTE: [skip ci] prevents push & PR workflows in that repo from running
-              git add "$TARGET_FILE"
-              git commit -m "chore: sync pull request template from org .github repository [skip ci]"
-
-              git push origin "$TARGET_BRANCH"
-            else
-              echo "No changes for $ORG/$REPO_NAME"
-            fi
-
+            git push origin "$TARGET_BRANCH"
+            echo "Template synced successfully to $ORG/$REPO_NAME."
+            
             cd ..
             rm -rf "$REPO_NAME"
           done < repos.txt
