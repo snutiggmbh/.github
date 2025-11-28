@@ -81,10 +81,8 @@ jobs:
               git checkout -b "$TARGET_BRANCH"
             else
               # Repo has commits. Ensure we are on the default branch.
-              # First fetch any remote updates
               git fetch origin
 
-              # If the default branch exists on remote, track it; otherwise create it locally
               if git show-ref --verify --quiet "refs/remotes/origin/$TARGET_BRANCH"; then
                 echo "Checking out existing default branch $TARGET_BRANCH"
                 git checkout "$TARGET_BRANCH"
@@ -95,38 +93,21 @@ jobs:
               fi
             fi
 
-            # Make sure we have the latest default branch
-            git fetch origin "$DEFAULT_BRANCH"
-            git checkout "$DEFAULT_BRANCH"
-
-            # OPTIONAL: skip repos that already have a template
-            # Uncomment this block if you *never* want to overwrite:
-            # if [ -f "$TARGET_FILE" ]; then
-            #   echo "Template already exists in $ORG/$REPO_NAME, skipping."
-            #   cd ..
-            #   rm -rf "$REPO_NAME"
-            #   continue
-            # fi
-
             # Ensure .github exists
             mkdir -p .github
 
-            # Copy template from .github org repo
+            # Copy canonical template
             cp "../$TEMPLATE_SOURCE" "$TARGET_FILE"
 
             # Check if there is any actual change
             if git status --porcelain | grep -q "$TARGET_FILE"; then
-              echo "Template changed in $ORG/$REPO_NAME, committing and pushing ..."
+              echo "Template changed in $ORG/$REPO_NAME, committing and pushing to $TARGET_BRANCH ..."
 
+              # NOTE: [skip ci] prevents push & PR workflows in that repo from running
               git add "$TARGET_FILE"
-              git commit -m "chore: sync pull request template from org .github repository [skip actions]" || echo "Nothing to commit"
+              git commit -m "chore: sync pull request template from org .github repository [skip ci]"
 
-              # If there were no staged changes, skip push
-              if git log -1 --pretty=%B | grep -q "chore: sync pull request template from org .github repository"; then
-                git push origin "$DEFAULT_BRANCH"
-              else
-                echo "No new commit created, skipping push."
-              fi
+              git push origin "$TARGET_BRANCH"
             else
               echo "No changes for $ORG/$REPO_NAME"
             fi
