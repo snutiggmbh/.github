@@ -93,7 +93,7 @@ jobs:
                 "base": "main",
                 "body": "This PR updates .github/pull_request_template.md from the org-wide canonical template in the .github repository."
               }
-EOF
+            EOF
 
             else
               echo "No changes for $ORG/$REPO"
