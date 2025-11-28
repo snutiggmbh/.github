@@ -72,11 +72,32 @@ jobs:
             git clone "https://$TOKEN@github.com/$ORG/$REPO_NAME.git"
             cd "$REPO_NAME"
 
+            TARGET_BRANCH="$DEFAULT_BRANCH"
+            TARGET_FILE=".github/pull_request_template.md"
+
+            # Check if repo is empty (no commits / no HEAD)
+            if ! git rev-parse HEAD >/dev/null 2>&1; then
+              echo "Repo $ORG/$REPO_NAME appears to be empty. Creating $TARGET_BRANCH from scratch."
+              git checkout -b "$TARGET_BRANCH"
+            else
+              # Repo has commits. Ensure we are on the default branch.
+              # First fetch any remote updates
+              git fetch origin
+
+              # If the default branch exists on remote, track it; otherwise create it locally
+              if git show-ref --verify --quiet "refs/remotes/origin/$TARGET_BRANCH"; then
+                echo "Checking out existing default branch $TARGET_BRANCH"
+                git checkout "$TARGET_BRANCH"
+                git pull origin "$TARGET_BRANCH"
+              else
+                echo "Default branch $TARGET_BRANCH does not exist on remote, creating local branch."
+                git checkout -b "$TARGET_BRANCH"
+              fi
+            fi
+
             # Make sure we have the latest default branch
             git fetch origin "$DEFAULT_BRANCH"
             git checkout "$DEFAULT_BRANCH"
-
-            TARGET_FILE=".github/pull_request_template.md"
 
             # OPTIONAL: skip repos that already have a template
             # Uncomment this block if you *never* want to overwrite:
@@ -98,7 +119,7 @@ jobs:
               echo "Template changed in $ORG/$REPO_NAME, committing and pushing ..."
 
               git add "$TARGET_FILE"
-              git commit -m "chore: sync pull request template from org .github repository" || echo "Nothing to commit"
+              git commit -m "chore: sync pull request template from org .github repository [skip actions]" || echo "Nothing to commit"
 
               # If there were no staged changes, skip push
               if git log -1 --pretty=%B | grep -q "chore: sync pull request template from org .github repository"; then
