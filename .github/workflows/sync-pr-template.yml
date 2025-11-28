@@ -1,9 +1,9 @@
-name: Sync PR template to all org repos
+name: Sync PR template to all private org repos
 
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: "0 3 * * *" # every Day at 03:00 UTC
+    - cron: "0 3 * * *" # every Monday at 03:00 UTC; adjust or remove if not needed
 
 jobs:
   sync-template:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout .github repo
         uses: actions/checkout@v4
 
-      - name: Set up Git
+      - name: Set up Git identity
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -21,84 +21,95 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: List repos in org
+      - name: Collect private repos in org
         env:
           ORG: snutiggmbh
           TOKEN: ${{ secrets.ORG_REPOS_PAT }}
         run: |
           page=1
           > repos.txt
+
           while : ; do
+            echo "Fetching page $page ..."
             response=$(curl -s -H "Authorization: token $TOKEN" \
               "https://api.github.com/orgs/$ORG/repos?per_page=100&page=$page")
-            
-            # Break if empty array
+
+            # Stop when empty array returned
             if [ "$(echo "$response" | jq 'length')" -eq 0 ]; then
               break
             fi
 
-            # Filter out archived repos if you don't want to touch them
-            echo "$response" | jq -r '.[] | select(.archived == false) | .name' >> repos.txt
+            # only private, non-archived repos; store as "name default_branch"
+            echo "$response" | jq -r '
+              .[] 
+              | select(.private == true and .archived == false) 
+              | "\(.name) \(.default_branch)"
+            ' >> repos.txt
 
             page=$((page+1))
           done
 
-          echo "Repos:"
+          echo "Repos discovered:"
           cat repos.txt
 
-      - name: Sync template to each repo
+      - name: Sync template and push directly
         env:
           ORG: snutiggmbh
           TOKEN: ${{ secrets.ORG_REPOS_PAT }}
         run: |
-          TEMPLATE_PATH=".github/pull_request_template.md"
+          TEMPLATE_SOURCE=".github/pull_request_template.md"
 
-          if [ ! -f "$TEMPLATE_PATH" ]; then
-            echo "Template file $TEMPLATE_PATH not found in .github repo"
+          if [ ! -f "$TEMPLATE_SOURCE" ]; then
+            echo "Template file $TEMPLATE_SOURCE not found in .github repo"
             exit 1
           fi
 
-          while read -r REPO; do
-            echo "Processing $ORG/$REPO ..."
+          while read -r REPO_NAME DEFAULT_BRANCH; do
+            echo "----------------------------------------"
+            echo "Processing $ORG/$REPO_NAME (default: $DEFAULT_BRANCH)"
 
             # Clone repo with PAT
-            git clone "https://$TOKEN@github.com/$ORG/$REPO.git"
-            cd "$REPO"
+            git clone "https://$TOKEN@github.com/$ORG/$REPO_NAME.git"
+            cd "$REPO_NAME"
 
-            # Create .github directory if missing
+            # Make sure we have the latest default branch
+            git fetch origin "$DEFAULT_BRANCH"
+            git checkout "$DEFAULT_BRANCH"
+
+            TARGET_FILE=".github/pull_request_template.md"
+
+            # OPTIONAL: skip repos that already have a template
+            # Uncomment this block if you *never* want to overwrite:
+            # if [ -f "$TARGET_FILE" ]; then
+            #   echo "Template already exists in $ORG/$REPO_NAME, skipping."
+            #   cd ..
+            #   rm -rf "$REPO_NAME"
+            #   continue
+            # fi
+
+            # Ensure .github exists
             mkdir -p .github
 
-            # Copy template
-            cp "../$TEMPLATE_PATH" ".github/pull_request_template.md"
+            # Copy template from .github org repo
+            cp "../$TEMPLATE_SOURCE" "$TARGET_FILE"
 
-            # Check for changes
-            if git status --porcelain | grep -q ".github/pull_request_template.md"; then
-              git checkout -b chore/sync-pr-template || git checkout chore/sync-pr-template
+            # Check if there is any actual change
+            if git status --porcelain | grep -q "$TARGET_FILE"; then
+              echo "Template changed in $ORG/$REPO_NAME, committing and pushing ..."
 
-              git add .github/pull_request_template.md
-              git commit -m "chore: sync pull request template from .github org repo" || echo "Nothing to commit"
+              git add "$TARGET_FILE"
+              git commit -m "chore: sync pull request template from org .github repository" || echo "Nothing to commit"
 
-              # Push branch
-              git push -u origin chore/sync-pr-template || echo "Push failed"
-
-              # Create PR via API
-              curl -s -X POST \
-                -H "Authorization: token $TOKEN" \
-                -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/$ORG/$REPO/pulls" \
-                -d @- <<EOF
-              {
-                "title": "chore: sync pull request template",
-                "head": "chore/sync-pr-template",
-                "base": "main",
-                "body": "This PR updates .github/pull_request_template.md from the org-wide canonical template in the .github repository."
-              }
-            EOF
-
+              # If there were no staged changes, skip push
+              if git log -1 --pretty=%B | grep -q "chore: sync pull request template from org .github repository"; then
+                git push origin "$DEFAULT_BRANCH"
+              else
+                echo "No new commit created, skipping push."
+              fi
             else
-              echo "No changes for $ORG/$REPO"
+              echo "No changes for $ORG/$REPO_NAME"
             fi
 
             cd ..
-            rm -rf "$REPO"
+            rm -rf "$REPO_NAME"
           done < repos.txt
